@@ -174,13 +174,19 @@ const generated = `/**
 ${keyList}
  */
 
-/** One paid route's published request/response contract. */
-export interface RouteSchema {
+/**
+ * One paid route's published request/response contract.
+ *
+ * Declared as a type alias rather than an interface so that it keeps an
+ * implicit index signature and stays assignable to the paywall's
+ * \`outputSchema?: Record<string, unknown>\`.
+ */
+export type RouteSchema = {
   /** How to call the route: method, path/query parameters or JSON body fields. */
   input: Record<string, unknown>;
   /** JSON Schema of the 200 response body. */
   output: Record<string, unknown>;
-}
+};
 
 export const ROUTE_SCHEMAS: Record<string, RouteSchema> = ${JSON.stringify(schemas, null, 2)};
 `;
