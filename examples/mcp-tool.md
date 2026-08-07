@@ -18,7 +18,7 @@ import { z } from "zod";
 import { wrapFetchWithPayment } from "x402-fetch";
 import { privateKeyToAccount } from "viem/accounts";
 
-const BASE_URL = process.env.FLIGHT_SEARCH_URL ?? "http://localhost:4021";
+const BASE_URL = process.env.FLIGHT_SEARCH_URL ?? "http://localhost:4022";
 const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`);
 // Cap each call at $0.05 so a tool loop can never run away.
 const payFetch = wrapFetchWithPayment(fetch, account, 50_000n);
@@ -89,7 +89,7 @@ await server.connect(new StdioServerTransport());
       "command": "npx",
       "args": ["tsx", "/path/to/mcp-server.ts"],
       "env": {
-        "FLIGHT_SEARCH_URL": "http://localhost:4021",
+        "FLIGHT_SEARCH_URL": "http://localhost:4022",
         "PRIVATE_KEY": "0x… funded Base Sepolia key"
       }
     }

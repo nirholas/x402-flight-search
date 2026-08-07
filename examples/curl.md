@@ -5,8 +5,8 @@ Exactly what happens on the wire: 402 → pay → 200.
 ## 1. Free routes first
 
 ```bash
-curl -s http://localhost:4021/health | jq
-curl -s http://localhost:4021/airports | jq '.airports[].code'
+curl -s http://localhost:4022/health | jq
+curl -s http://localhost:4022/airports | jq '.airports[].code'
 ```
 
 `health.source` tells you whether this deployment is on live Amadeus data or
@@ -15,7 +15,7 @@ deterministic fixtures.
 ## 2. Hit a paid route without payment → HTTP 402
 
 ```bash
-curl -si "http://localhost:4021/search?origin=JFK&destination=LAX&date=2026-09-15" | head -40
+curl -si "http://localhost:4022/search?origin=JFK&destination=LAX&date=2026-09-15" | head -40
 ```
 
 You get `402 Payment Required` and a JSON body with **one payment-requirements
@@ -30,7 +30,7 @@ object per rail** — Base and Solana:
       "scheme": "exact",
       "network": "base-sepolia",
       "maxAmountRequired": "5000",
-      "resource": "http://localhost:4021/search",
+      "resource": "http://localhost:4022/search",
       "description": "Flight offers for a route and date — carriers, segments, cabin, total fare",
       "mimeType": "application/json",
       "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
@@ -42,7 +42,7 @@ object per rail** — Base and Solana:
       "scheme": "exact",
       "network": "solana",
       "maxAmountRequired": "5000",
-      "resource": "http://localhost:4021/search",
+      "resource": "http://localhost:4022/search",
       "description": "Flight offers for a route and date — carriers, segments, cabin, total fare",
       "mimeType": "application/json",
       "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
@@ -58,7 +58,7 @@ object per rail** — Base and Solana:
 on either rail. Filter to the rail you can pay:
 
 ```bash
-curl -s "http://localhost:4021/search?origin=JFK&destination=LAX&date=2026-09-15" \
+curl -s "http://localhost:4022/search?origin=JFK&destination=LAX&date=2026-09-15" \
   | jq '.accepts[] | select(.network | startswith("solana"))'
 ```
 
@@ -77,7 +77,7 @@ npm run client
 Under the hood it re-sends the same request as:
 
 ```bash
-curl -s "http://localhost:4021/search?origin=JFK&destination=LAX&date=2026-09-15" \
+curl -s "http://localhost:4022/search?origin=JFK&destination=LAX&date=2026-09-15" \
   -H "X-PAYMENT: <base64 signed payment payload>"
 ```
 
@@ -118,7 +118,7 @@ curl -si … | grep -i x-payment-response | cut -d' ' -f2 | base64 -d | jq
 Take an `offerId` from the search result:
 
 ```bash
-curl -s "http://localhost:4021/price/fx-JFK-LAX-2026-09-15-1-0" \
+curl -s "http://localhost:4022/price/fx-JFK-LAX-2026-09-15-1-0" \
   -H "X-PAYMENT: <base64 payload>" | jq '{offerId, confirmed, total: .offer.price.total, priceGuarantee}'
 ```
 
@@ -129,7 +129,7 @@ encode their own query and never expire.
 ## 6. Watch a fare, pay per look ($0.002)
 
 ```bash
-curl -s "http://localhost:4021/check?origin=JFK&destination=LAX&date=2026-09-15&previousPrice=300" \
+curl -s "http://localhost:4022/check?origin=JFK&destination=LAX&date=2026-09-15&previousPrice=300" \
   -H "X-PAYMENT: <base64 payload>" | jq '{lowest: .snapshot.lowestTotal, delta}'
 ```
 

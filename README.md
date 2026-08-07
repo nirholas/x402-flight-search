@@ -28,7 +28,7 @@ and the delta against your last one, so you pay per look and own the loop.
 git clone https://github.com/nirholas/x402-flight-search
 cd x402-flight-search && npm install
 cp .env.example .env            # ships with working payTo addresses — edit to get paid yourself
-npm run dev                     # service at http://localhost:4021
+npm run dev                     # service at http://localhost:4022
 ```
 
 No API keys needed to run it — see [Real backend](#real-backend--api-keys) below.
@@ -36,7 +36,7 @@ No API keys needed to run it — see [Real backend](#real-backend--api-keys) bel
 First 402, no wallet needed:
 
 ```bash
-curl -s "http://localhost:4021/search?origin=JFK&destination=LAX&date=2026-09-15" \
+curl -s "http://localhost:4022/search?origin=JFK&destination=LAX&date=2026-09-15" \
   | jq '.accepts[] | {network, payTo, maxAmountRequired}'
 ```
 

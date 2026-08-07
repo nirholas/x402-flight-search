@@ -16,7 +16,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:4021",
+      "url": "http://localhost:4022",
       "description": "Local development"
     }
   ],
@@ -737,7 +737,7 @@
                   "scheme": "exact",
                   "network": "base-sepolia",
                   "maxAmountRequired": "5000",
-                  "resource": "http://localhost:4021/search",
+                  "resource": "http://localhost:4022/search",
                   "description": "Flight offers for a route and date — carriers, segments, cabin, total fare",
                   "mimeType": "application/json",
                   "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
@@ -752,7 +752,7 @@
                   "scheme": "exact",
                   "network": "solana",
                   "maxAmountRequired": "5000",
-                  "resource": "http://localhost:4021/search",
+                  "resource": "http://localhost:4022/search",
                   "description": "Flight offers for a route and date — carriers, segments, cabin, total fare",
                   "mimeType": "application/json",
                   "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",

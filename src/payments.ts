@@ -76,8 +76,10 @@ const isSolanaAddress = (v: string): boolean => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.
  * whatever rail remains rather than failing to boot.
  */
 export function buildRails(): RailConfig[] {
+  // Facilitators are rail-specific: x402.org settles base-sepolia only, so the
+  // Solana rail defaults to PayAI. Override either with its own env var.
   const facilitator = env("FACILITATOR_URL", "https://x402.org/facilitator");
-  const solanaFacilitator = env("SOLANA_FACILITATOR_URL", facilitator);
+  const solanaFacilitator = env("SOLANA_FACILITATOR_URL", "https://facilitator.payai.network");
   const out: RailConfig[] = [];
 
   const evmPayTo = env("PAY_TO_ADDRESS", DEFAULT_EVM_PAY_TO);

@@ -9,7 +9,7 @@
  *
  * Usage:
  *   export PRIVATE_KEY=0x…                  # testnet wallet with Base Sepolia USDC
- *   export BASE_URL=http://localhost:4021   # optional
+ *   export BASE_URL=http://localhost:4022   # optional
  *   npm run client
  *
  * Free testnet USDC on Base Sepolia: https://faucet.circle.com
@@ -17,7 +17,7 @@
 import { wrapFetchWithPayment, decodeXPaymentResponse } from "x402-fetch";
 import { privateKeyToAccount } from "viem/accounts";
 
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:4021";
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:4022";
 const pk = process.env.PRIVATE_KEY;
 if (!pk) {
   console.error(

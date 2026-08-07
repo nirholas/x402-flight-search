@@ -10,7 +10,7 @@ Data comes from the **Amadeus Self-Service API** when the operator has keys set,
 and from deterministic fixtures otherwise. **Every response carries a `source`
 field (`"amadeus"` or `"fixture"`)** — always read it before trusting a price.
 
-**Base URL**: `{BASE_URL}` (e.g. `http://localhost:4021` when self-hosted)
+**Base URL**: `{BASE_URL}` (e.g. `http://localhost:4022` when self-hosted)
 
 Machine-readable price sheet: `{BASE_URL}/.well-known/x402`
 
@@ -124,7 +124,9 @@ was given). Carry `delta.currentPrice` into your next poll as `previousPrice`.
 
 - Protocol: **x402** (HTTP 402 → signed USDC authorization → retry with `X-PAYMENT`)
 - Asset: **USDC** on both rails
-- Facilitator: `https://x402.org/facilitator` (override: `FACILITATOR_URL`)
+- Facilitators are rail-specific: `https://x402.org/facilitator` settles the EVM
+  rail (override: `FACILITATOR_URL`), `https://facilitator.payai.network` settles
+  the Solana rail (override: `SOLANA_FACILITATOR_URL`)
 
 | Rail | Network | payTo |
 | --- | --- | --- |
@@ -142,10 +144,10 @@ entry per rail**. Pick either, sign for that network, and retry with
   "accepts": [
     { "scheme": "exact", "network": "base-sepolia", "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
       "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402", "maxAmountRequired": "5000",
-      "resource": "http://localhost:4021/search", "mimeType": "application/json" },
+      "resource": "http://localhost:4022/search", "mimeType": "application/json" },
     { "scheme": "exact", "network": "solana", "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
       "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW", "maxAmountRequired": "5000",
-      "resource": "http://localhost:4021/search", "mimeType": "application/json" }
+      "resource": "http://localhost:4022/search", "mimeType": "application/json" }
   ]
 }
 ```

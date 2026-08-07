@@ -1,6 +1,6 @@
 # API reference
 
-Base URL: your deployment (default `http://localhost:4021`).
+Base URL: your deployment (default `http://localhost:4022`).
 Machine-readable versions: [`openapi.json`](https://github.com/nirholas/x402-flight-search/blob/main/openapi.json) ·
 [`/.well-known/x402`](https://github.com/nirholas/x402-flight-search/blob/main/public/.well-known/x402)
 
@@ -23,14 +23,14 @@ Every 402 body looks like this (amounts are atomic USDC, 6 decimals):
   "error": "X-PAYMENT header required — pay in USDC on Base or Solana, your pick.",
   "accepts": [
     { "scheme": "exact", "network": "base-sepolia", "maxAmountRequired": "5000",
-      "resource": "http://localhost:4021/search",
+      "resource": "http://localhost:4022/search",
       "description": "Flight offers for a route and date — carriers, segments, cabin, total fare",
       "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
       "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
       "mimeType": "application/json", "maxTimeoutSeconds": 60,
       "extra": { "name": "USDC", "version": "2" } },
     { "scheme": "exact", "network": "solana", "maxAmountRequired": "5000",
-      "resource": "http://localhost:4021/search",
+      "resource": "http://localhost:4022/search",
       "description": "Flight offers for a route and date — carriers, segments, cabin, total fare",
       "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
       "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
