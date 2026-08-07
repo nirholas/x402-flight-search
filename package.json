@@ -1,0 +1,50 @@
+{
+  "name": "x402-flight-search",
+  "version": "0.1.0",
+  "description": "Pay-per-query flight search over the Amadeus API — offers, live pricing, and fare-drop checks for agents",
+  "type": "module",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nirholas/x402-flight-search"
+  },
+  "homepage": "https://nirholas.github.io/x402-flight-search/",
+  "keywords": [
+    "x402",
+    "micropayments",
+    "usdc",
+    "ai-agents",
+    "agentic-commerce",
+    "flights",
+    "amadeus",
+    "travel",
+    "fare-watch",
+    "solana",
+    "base",
+    "http-402",
+    "flight-search"
+  ],
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "client": "tsx examples/agent-client.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "x402": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "viem": "^2.21.0",
+    "x402-fetch": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "author": "nirholas <nichxbt@gmail.com>"
+}

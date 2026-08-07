@@ -1,0 +1,773 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "x402-flight-search",
+    "version": "0.1.0",
+    "description": "Pay-per-query flight search over the Amadeus Self-Service API — offers, live pricing, and pay-per-poll fare-drop checks. Paid routes use the x402 protocol: pay in USDC on Base or Solana, your client picks the rail. Live Amadeus data when AMADEUS_CLIENT_ID/SECRET are set, deterministic fixtures otherwise; every response carries a `source` field.",
+    "license": {
+      "name": "Apache-2.0",
+      "identifier": "Apache-2.0"
+    },
+    "contact": {
+      "name": "nirholas",
+      "email": "nichxbt@gmail.com",
+      "url": "https://github.com/nirholas/x402-flight-search"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4021",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/search": {
+      "get": {
+        "summary": "Flight offers for a route and date (x402 paid, $0.005)",
+        "operationId": "searchFlights",
+        "parameters": [
+          {
+            "name": "origin",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{3}$"
+            },
+            "example": "JFK",
+            "description": "3-letter IATA origin"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{3}$"
+            },
+            "example": "LAX",
+            "description": "3-letter IATA destination"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-09-15",
+            "description": "Departure date, YYYY-MM-DD"
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9,
+              "default": 1
+            }
+          },
+          {
+            "name": "max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 20,
+              "default": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Flight offers, cheapest first",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt: { success, rail: \"evm\"|\"solana\", network, transaction, payer }",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid IATA code or date",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "502": {
+            "description": "Amadeus upstream error (live mode only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/price/{offerId}": {
+      "get": {
+        "summary": "Confirmed priced offer (x402 paid, $0.003)",
+        "operationId": "priceOffer",
+        "description": "Re-prices one offer against the carrier. Live `am-` ids are session-scoped — Amadeus needs the original offer object, so re-run /search if you get a 404. Fixture `fx-` ids are stateless.",
+        "parameters": [
+          {
+            "name": "offerId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "fx-JFK-LAX-2026-09-15-1-0"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed priced offer",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt: { success, rail: \"evm\"|\"solana\", network, transaction, payer }",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PricedOffer"
+                }
+              }
+            }
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "404": {
+            "description": "Unknown or expired offerId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Amadeus upstream error (live mode only)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/check": {
+      "get": {
+        "summary": "Fare snapshot + delta vs your previous price (x402 paid, $0.002)",
+        "operationId": "checkFare",
+        "description": "Pay-per-poll fare watching. Each paid call returns the current cheapest fare and the change versus the price you pass in. No subscription, no server-side state.",
+        "parameters": [
+          {
+            "name": "origin",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "JFK"
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "LAX"
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-09-15"
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "previousPrice",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            },
+            "example": 300,
+            "description": "Your last observed price; omit on the first poll"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot plus delta",
+            "headers": {
+              "X-PAYMENT-RESPONSE": {
+                "description": "Base64 JSON settlement receipt: { success, rail: \"evm\"|\"solana\", network, transaction, payer }",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FareCheck"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid params",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "404": {
+            "description": "No offers for this route/date",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Service status and data source (free)",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "service": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "enum": [
+                        "amadeus",
+                        "fixture"
+                      ]
+                    },
+                    "rails": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/airports": {
+      "get": {
+        "summary": "IATA codes the fixture data covers well (free)",
+        "operationId": "airports",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "note": {
+                      "type": "string"
+                    },
+                    "source": {
+                      "type": "string"
+                    },
+                    "airports": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "city": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/x402": {
+      "get": {
+        "summary": "x402 discovery manifest (free)",
+        "operationId": "manifest",
+        "responses": {
+          "200": {
+            "description": "Discovery manifest listing every paid resource on both rails",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PaymentRequirements": {
+        "type": "object",
+        "description": "x402 payment requirements — one accepted payment option (one rail). A 402 lists one of these per rail: USDC on Base and USDC on Solana.",
+        "properties": {
+          "scheme": {
+            "type": "string",
+            "enum": [
+              "exact"
+            ]
+          },
+          "network": {
+            "type": "string",
+            "enum": [
+              "base-sepolia",
+              "base",
+              "solana",
+              "solana-devnet"
+            ],
+            "description": "EVM rail: base-sepolia | base. Solana rail: solana | solana-devnet."
+          },
+          "maxAmountRequired": {
+            "type": "string",
+            "description": "Atomic USDC units (6 decimals)"
+          },
+          "resource": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": {
+            "type": "string"
+          },
+          "mimeType": {
+            "type": "string"
+          },
+          "payTo": {
+            "type": "string",
+            "description": "0x… on the EVM rail, base58 on the Solana rail"
+          },
+          "maxTimeoutSeconds": {
+            "type": "integer"
+          },
+          "asset": {
+            "type": "string",
+            "description": "USDC contract address (EVM) or SPL mint (Solana)"
+          },
+          "outputSchema": {
+            "type": "object"
+          },
+          "extra": {
+            "type": "object",
+            "description": "EVM: the token EIP-712 domain. Solana: mint name/decimals plus the optional facilitator feePayer."
+          }
+        },
+        "required": [
+          "scheme",
+          "network",
+          "maxAmountRequired",
+          "resource",
+          "payTo",
+          "asset"
+        ]
+      },
+      "FlightSegment": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "departure": {
+            "type": "string"
+          },
+          "arrival": {
+            "type": "string"
+          },
+          "carrierCode": {
+            "type": "string"
+          },
+          "flightNumber": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "type": "integer"
+          }
+        }
+      },
+      "FlightOffer": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "description": "Pass to GET /price/{offerId}"
+          },
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "price": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              }
+            }
+          },
+          "validatingCarrier": {
+            "type": "string"
+          },
+          "seatsRemaining": {
+            "type": "integer"
+          },
+          "cabin": {
+            "type": "string"
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightSegment"
+            }
+          }
+        },
+        "required": [
+          "offerId",
+          "price",
+          "segments"
+        ]
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ],
+            "description": "Whether this came from live Amadeus or deterministic fixtures"
+          },
+          "query": {
+            "type": "object"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightOffer"
+            }
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "source",
+          "offers",
+          "retrievedAt"
+        ]
+      },
+      "PricedOffer": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "offerId": {
+            "type": "string"
+          },
+          "confirmed": {
+            "type": "boolean"
+          },
+          "offer": {
+            "$ref": "#/components/schemas/FlightOffer"
+          },
+          "priceGuarantee": {
+            "type": "string"
+          },
+          "pricedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "offerId",
+          "confirmed",
+          "offer"
+        ]
+      },
+      "FareCheck": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "query": {
+            "type": "object"
+          },
+          "snapshot": {
+            "type": "object",
+            "properties": {
+              "lowestTotal": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "offerId": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "retrievedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "delta": {
+            "type": "object",
+            "properties": {
+              "previousPrice": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "currentPrice": {
+                "type": "number"
+              },
+              "change": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "changePct": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "verdict": {
+                "enum": [
+                  "dropped",
+                  "rose",
+                  "unchanged",
+                  "no-cursor"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "snapshot",
+          "delta"
+        ]
+      }
+    },
+    "responses": {
+      "PaymentRequired": {
+        "description": "Payment required — pay via x402 on either rail and retry with the X-PAYMENT header. `accepts` holds one entry per rail.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "x402Version": {
+                  "type": "integer"
+                },
+                "error": {
+                  "type": "string"
+                },
+                "accepts": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PaymentRequirements"
+                  }
+                }
+              }
+            },
+            "example": {
+              "x402Version": 1,
+              "error": "X-PAYMENT header required — pay in USDC on Base or Solana, your pick.",
+              "accepts": [
+                {
+                  "scheme": "exact",
+                  "network": "base-sepolia",
+                  "maxAmountRequired": "5000",
+                  "resource": "http://localhost:4021/search",
+                  "description": "Flight offers for a route and date — carriers, segments, cabin, total fare",
+                  "mimeType": "application/json",
+                  "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+                  "maxTimeoutSeconds": 60,
+                  "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+                  "extra": {
+                    "name": "USDC",
+                    "version": "2"
+                  }
+                },
+                {
+                  "scheme": "exact",
+                  "network": "solana",
+                  "maxAmountRequired": "5000",
+                  "resource": "http://localhost:4021/search",
+                  "description": "Flight offers for a route and date — carriers, segments, cabin, total fare",
+                  "mimeType": "application/json",
+                  "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+                  "maxTimeoutSeconds": 60,
+                  "asset": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+                  "extra": {
+                    "name": "USDC",
+                    "decimals": 6
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

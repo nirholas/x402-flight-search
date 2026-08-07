@@ -1,0 +1,474 @@
+{
+  "x402Version": 1,
+  "name": "x402-flight-search",
+  "description": "Pay-per-query flight search over the Amadeus API — offers, live pricing, and fare-drop checks for agents",
+  "homepage": "https://nirholas.github.io/x402-flight-search/",
+  "repository": "https://github.com/nirholas/x402-flight-search",
+  "contact": "nichxbt@gmail.com",
+  "skill": "/skill.md",
+  "dataSource": {
+    "upstream": "Amadeus Self-Service API",
+    "keyed": true,
+    "envVars": [
+      "AMADEUS_CLIENT_ID",
+      "AMADEUS_CLIENT_SECRET"
+    ],
+    "fallback": "Deterministic fixtures when the keys are unset. Every response carries source:\"amadeus\"|\"fixture\" so a caller always knows which it got."
+  },
+  "payment": {
+    "protocol": "x402",
+    "asset": "USDC",
+    "note": "Pay in USDC on Base or Solana — your client picks the rail.",
+    "rails": [
+      {
+        "rail": "evm",
+        "network": "base-sepolia",
+        "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+        "facilitator": "https://x402.org/facilitator"
+      },
+      {
+        "rail": "solana",
+        "network": "solana",
+        "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+        "facilitator": "https://x402.org/facilitator"
+      }
+    ]
+  },
+  "resources": [
+    {
+      "resource": "GET /search",
+      "description": "Flight offers for a route and date — carriers, segments, cabin, total fare",
+      "price": "$0.005",
+      "asset": "USDC",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "5000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "5000",
+          "mimeType": "application/json"
+        }
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "type": "string",
+            "description": "3-letter IATA, e.g. JFK"
+          },
+          "destination": {
+            "type": "string",
+            "description": "3-letter IATA, e.g. LAX"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "YYYY-MM-DD departure date"
+          },
+          "adults": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9,
+            "default": 1
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 5
+          }
+        },
+        "required": [
+          "origin",
+          "destination",
+          "date"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "query": {
+            "type": "object"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "offerId": {
+                  "type": "string",
+                  "description": "Pass to GET /price/:offerId"
+                },
+                "source": {
+                  "enum": [
+                    "amadeus",
+                    "fixture"
+                  ]
+                },
+                "price": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "string"
+                    },
+                    "currency": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "validatingCarrier": {
+                  "type": "string"
+                },
+                "seatsRemaining": {
+                  "type": "integer"
+                },
+                "cabin": {
+                  "type": "string"
+                },
+                "segments": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "from": {
+                        "type": "string"
+                      },
+                      "to": {
+                        "type": "string"
+                      },
+                      "departure": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "arrival": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "carrierCode": {
+                        "type": "string"
+                      },
+                      "flightNumber": {
+                        "type": "string"
+                      },
+                      "durationMinutes": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "required": [
+                "offerId",
+                "price",
+                "segments"
+              ]
+            }
+          },
+          "retrievedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "source",
+          "offers",
+          "retrievedAt"
+        ]
+      }
+    },
+    {
+      "resource": "GET /price/:offerId",
+      "description": "Confirmed priced offer — re-priced against the carrier at request time",
+      "price": "$0.003",
+      "asset": "USDC",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "3000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "3000",
+          "mimeType": "application/json"
+        }
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "description": "An offerId from GET /search"
+          }
+        },
+        "required": [
+          "offerId"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "offerId": {
+            "type": "string"
+          },
+          "confirmed": {
+            "type": "boolean"
+          },
+          "offer": {
+            "type": "object",
+            "properties": {
+              "offerId": {
+                "type": "string",
+                "description": "Pass to GET /price/:offerId"
+              },
+              "source": {
+                "enum": [
+                  "amadeus",
+                  "fixture"
+                ]
+              },
+              "price": {
+                "type": "object",
+                "properties": {
+                  "total": {
+                    "type": "string"
+                  },
+                  "currency": {
+                    "type": "string"
+                  }
+                }
+              },
+              "validatingCarrier": {
+                "type": "string"
+              },
+              "seatsRemaining": {
+                "type": "integer"
+              },
+              "cabin": {
+                "type": "string"
+              },
+              "segments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "to": {
+                      "type": "string"
+                    },
+                    "departure": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "arrival": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "carrierCode": {
+                      "type": "string"
+                    },
+                    "flightNumber": {
+                      "type": "string"
+                    },
+                    "durationMinutes": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "offerId",
+              "price",
+              "segments"
+            ]
+          },
+          "priceGuarantee": {
+            "type": "string"
+          },
+          "pricedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "offerId",
+          "confirmed",
+          "offer"
+        ]
+      }
+    },
+    {
+      "resource": "GET /check",
+      "description": "Current cheapest fare snapshot plus the delta versus a caller-supplied previous price — pay-per-poll fare watching",
+      "price": "$0.002",
+      "asset": "USDC",
+      "network": "base-sepolia",
+      "networks": [
+        "base-sepolia",
+        "solana"
+      ],
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "base-sepolia",
+          "asset": "USDC",
+          "payTo": "0x40252CFDF8B20Ed757D61ff157719F33Ec332402",
+          "maxAmountRequired": "2000",
+          "mimeType": "application/json"
+        },
+        {
+          "scheme": "exact",
+          "network": "solana",
+          "asset": "USDC",
+          "payTo": "WwwuGbqHrwF5RG89KhUbmRWEvjnRH9k5kVM5p7T3WwW",
+          "maxAmountRequired": "2000",
+          "mimeType": "application/json"
+        }
+      ],
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "adults": {
+            "type": "integer",
+            "default": 1
+          },
+          "previousPrice": {
+            "type": "number",
+            "description": "Your last observed price. Omit on the first poll to get verdict:\"no-cursor\"."
+          }
+        },
+        "required": [
+          "origin",
+          "destination",
+          "date"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "enum": [
+              "amadeus",
+              "fixture"
+            ]
+          },
+          "query": {
+            "type": "object"
+          },
+          "snapshot": {
+            "type": "object",
+            "properties": {
+              "lowestTotal": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              },
+              "offerId": {
+                "type": "string"
+              },
+              "carrier": {
+                "type": "string"
+              },
+              "retrievedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "delta": {
+            "type": "object",
+            "properties": {
+              "previousPrice": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "currentPrice": {
+                "type": "number"
+              },
+              "change": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "changePct": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "verdict": {
+                "enum": [
+                  "dropped",
+                  "rose",
+                  "unchanged",
+                  "no-cursor"
+                ]
+              }
+            }
+          }
+        },
+        "required": [
+          "snapshot",
+          "delta"
+        ]
+      }
+    }
+  ]
+}
