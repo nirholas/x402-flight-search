@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "x402-flight-search"
+abstract: "Pay-per-query flight search over the Amadeus API: offers, live pricing, and fare-drop checks for agents"
+license: Apache-2.0
+repository-code: "https://github.com/nirholas/x402-flight-search"
+url: "https://three.ws"
+authors:
+  - name: three.ws
+    website: "https://three.ws"
