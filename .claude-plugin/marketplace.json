@@ -1,0 +1,25 @@
+{
+  "name": "x402-flight-search",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Search flight offers, get confirmed prices and check fare drops over Amadeus, paid per call in USDC via x402.",
+  "plugins": [
+    {
+      "name": "x402-flight-search",
+      "source": "./plugins/x402-flight-search",
+      "description": "Search flight offers, get confirmed prices and check fare drops over Amadeus, paid per call in USDC via x402.",
+      "category": "data",
+      "tags": [
+        "x402",
+        "usdc",
+        "solana",
+        "base",
+        "agentic-commerce",
+        "http-402",
+        "flights",
+        "amadeus"
+      ]
+    }
+  ]
+}
