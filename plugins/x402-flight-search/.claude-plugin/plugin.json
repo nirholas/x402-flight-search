@@ -1,0 +1,21 @@
+{
+  "name": "x402-flight-search",
+  "version": "0.1.0",
+  "description": "Search flight offers, get confirmed prices and check fare drops over Amadeus, paid per call in USDC via x402.",
+  "author": {
+    "name": "nirholas"
+  },
+  "repository": "https://github.com/nirholas/x402-flight-search",
+  "homepage": "https://nirholas.github.io/x402-flight-search/",
+  "license": "Apache-2.0",
+  "keywords": [
+    "x402",
+    "usdc",
+    "solana",
+    "base",
+    "agentic-commerce",
+    "http-402",
+    "flights",
+    "amadeus"
+  ]
+}
